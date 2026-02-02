@@ -1,5 +1,5 @@
 # 使用官方 Python 镜像作为基础
-FROM python:3.13-slim as builder
+FROM python:3.13-slim
 
 # 设置工作目录
 WORKDIR /app
@@ -12,36 +12,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 安装 uv
 RUN pip install --no-cache-dir uv
 
-# 复制项目文件
-COPY pyproject.toml README.md ./
-COPY main.py api_server.py client_example.py ./
-
-# 创建虚拟环境并安装依赖
+# 创建虚拟环境
 RUN uv venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
-RUN uv pip install --no-cache -e .
 
-# 生产镜像
-FROM python:3.13-slim
+# 复制项目文件
+COPY pyproject.toml ./
 
-# 设置工作目录
-WORKDIR /app
-
-# 创建非 root 用户
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# 从 builder 复制虚拟环境
-COPY --from=builder /app/.venv /app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
+# 安装依赖（不安装包本身，只安装依赖）
+RUN uv pip install --no-cache fastapi[standard]>=0.128.0 requests>=2.31.0
 
 # 复制应用代码
-COPY --chown=appuser:appuser main.py api_server.py client_example.py ./
+COPY main.py api_server.py client_example.py ./
 
 # 创建临时目录
-RUN mkdir -p /tmp/qwen_tts && chown -R appuser:appuser /tmp/qwen_tts
-
-# 切换到非 root 用户
-USER appuser
+RUN mkdir -p /tmp/qwen_tts
 
 # 暴露端口
 EXPOSE 8000

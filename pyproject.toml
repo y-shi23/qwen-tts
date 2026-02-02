@@ -29,3 +29,6 @@ qwen-tts-server = "api_server:main"
 Homepage = "https://github.com/yourusername/qwen-tts"
 Repository = "https://github.com/yourusername/qwen-tts"
 Issues = "https://github.com/yourusername/qwen-tts/issues"
+
+[tool.setuptools]
+py-modules = ["main", "api_server", "client_example"]
