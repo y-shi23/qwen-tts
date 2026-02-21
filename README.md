@@ -15,7 +15,8 @@
 ### 1. 安装依赖
 
 ```bash
-uv sync
+npm install
+npm run build
 ```
 
 ### 2. 方式一：Docker 部署（推荐）
@@ -46,36 +47,28 @@ docker run -d -p 8000:8000 --name qwen-tts qwen-tts
 docker logs -f qwen-tts
 ```
 
-#### 使用 GitHub Container Registry
+### 方式二：直接调用（Node.js API）
 
-```bash
-# 拉取镜像
-docker pull ghcr.io/jiaws/qwen-tts:latest
+```typescript
+import { synthesize } from "qwen-tts";
 
-# 运行
-docker run -d -p 8000:8000 ghcr.io/jiaws/qwen-tts:latest
+// 合成语音
+const result = await synthesize({
+  text: "你好，我是通义千问",
+  voice: "Cherry / 芊悦",
+  language: "Chinese / 中文",
+  outputPath: "output.wav",
+});
+console.log(`音频已保存到: ${result.outputPath}`);
 ```
 
-### 方式一：直接调用（Python API）
-
-```python
-from main import synthesize
-
-# 合成语音
-output = synthesize(
-    text="你好，我是通义千问",
-    voice="Cherry / 芊悦",
-    language="Chinese / 中文",
-    output_path="output.wav"
-)
-print(f"音频已保存到: {output}")
-```
-
-### 方式二：启动 API 服务器
+### 方式三：启动 API 服务器
 
 ```bash
 # 启动服务器
-python api_server.py
+npm start
+# 或
+npx qwen-tts-server
 ```
 
 服务器将在 `http://localhost:8000` 启动
@@ -90,6 +83,8 @@ python api_server.py
 | GET | `/languages` | 获取语言列表 |
 | POST | `/tts` | 语音合成（JSON） |
 | GET | `/tts` | 语音合成（Query） |
+| POST | `/tts/url` | 语音合成 - 直接返回音频URL |
+| GET | `/tts/url` | 语音合成 - 直接返回音频URL（Query参数） |
 | GET | `/audio/{file_id}` | 下载音频 |
 
 #### 示例请求
@@ -108,17 +103,26 @@ curl -X POST "http://localhost:8000/tts" \
 curl "http://localhost:8000/tts?text=你好&voice=Cherry%20/%20芊悦"
 ```
 
-### 方式三：使用客户端
+### 方式四：使用 CLI
 
 ```bash
 # 合成语音
-python client_example.py -t "你好，我是通义千问"
+npx qwen-tts -t "你好，我是通义千问"
 
 # 使用不同发音人
-python client_example.py -t "Hello world" -v "Jennifer / 詹妮弗" -l "English / 英文"
+npx qwen-tts -t "Hello world" -v "Jennifer / 詹妮弗" -l "English / 英文"
 
 # 列出所有发音人
-python client_example.py --list-voices
+npx qwen-tts --list-voices
+
+# 列出所有语言
+npx qwen-tts --list-languages
+
+# 只获取音频URL，不下载
+npx qwen-tts -t "你好" --url
+
+# 启动服务器
+npx qwen-tts-server
 ```
 
 ## 可用发音人
@@ -197,17 +201,22 @@ python client_example.py --list-voices
 
 ```
 qwen-tts/
-├── main.py                    # 核心 TTS 客户端
-├── api_server.py              # FastAPI HTTP 服务器
-├── client_example.py          # 客户端示例
-├── pyproject.toml             # 项目配置
-├── README.md                  # 说明文档
-├── Dockerfile                 # Docker 镜像构建
-├── docker-compose.yml         # Docker Compose 配置
-├── .dockerignore              # Docker 忽略文件
-└── .github/
-    └── workflows/
-        └── docker-build.yml   # GitHub Actions CI/CD
+├── src/
+│   ├── index.ts           # 主入口，导出所有模块
+│   ├── client.ts          # 核心 TTS 客户端
+│   ├── server.ts          # HTTP 服务器
+│   ├── types.ts           # TypeScript 类型定义
+│   └── constants.ts       # 常量（VOICES, LANGUAGES）
+├── dist/                  # 编译输出目录
+├── bin/
+│   └── cli.js             # CLI 入口脚本
+├── package.json
+├── tsconfig.json
+├── Dockerfile             # Docker 镜像构建
+├── docker-compose.yml     # Docker Compose 配置
+├── .dockerignore          # Docker 忽略文件
+├── .gitignore
+└── README.md
 ```
 
 ## 许可证
